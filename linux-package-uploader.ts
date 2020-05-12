@@ -31,9 +31,7 @@ type ReleasePackage = {
 export class LinuxPackageUploader {
   readonly apiToken: string;
 
-  public constructor(
-    apiToken: string
-  ) {
+  public constructor(apiToken: string) {
     this.apiToken = apiToken;
   }
 
@@ -135,21 +133,22 @@ export class LinuxPackageUploader {
         fs.createReadStream(packageDetails.filePath)
       );
 
-      throw new Error("We don't currently inspect the response from the API");
-
-      await got.post(
-        `https://${this.apiToken}:@packagecloud.io/api/v1/repos/shiftkey/desktop/packages.json`,
-        { body: form }
-      );
-      // (error, uploadResponse, body) => {
-      //   if (error || uploadResponse.statusCode !== 201) {
-      //     if (reportProgress) reportProgress(`Error while uploading '${packageDetails.fileName}' v${packageDetails.version}: ${error || uploadResponse}`)
-      //     reject(uploadResponse)
-      //   } else {
-      //     if (reportProgress) reportProgress(`Successfully uploaded ${packageDetails.fileName}!`)
-      //     resolve(uploadResponse)
-      //   }
-      // })
+      try {
+        var response = await got.post(
+          `https://${this.apiToken}:@packagecloud.io/api/v1/repos/shiftkey/desktop/packages.json`,
+          { body: form }
+        );
+        if (response.statusCode !== 201) {
+          if (reportProgress) reportProgress(`Error while uploading '${packageDetails.fileName}' v${packageDetails.version}: ${response.body}`)
+          reject(response.body)
+        } else {
+          if (reportProgress) reportProgress(`Successfully uploaded ${packageDetails.fileName}!`)
+          resolve(response.body)
+        }
+      } catch (err) {
+        console.log("Error handling fired, giving up");
+        reject(err);
+      }
     });
   }
 
