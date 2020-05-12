@@ -167,24 +167,38 @@ export class LinuxPackageUploader {
     let versionJsonPath =
       type === "rpm" ? `${version.replace("-", ".")}/0.1` : version;
 
-    let existingPackageDetails = await got.get<ReleasePackage>(
-      `https://${this.apiToken}:@packagecloud.io/api/v1/repos/shiftkey/desktop/package/${type}/${distroName}/${distroVersion}/${arch}/${versionJsonPath}.json`,
-      { responseType: "json" }
-    );
-
-    if (
-      existingPackageDetails &&
-      existingPackageDetails.body &&
-      existingPackageDetails.body.destroy_url
-    ) {
-      if (reportProgress)
-        reportProgress(
-          `Deleting pre-existing package ${fileName} in shiftkey/desktop`
-        );
-
-      await got.delete(
-        `https://${this.apiToken}:@packagecloud.io/${existingPackageDetails.body.destroy_url}`
+    try {
+      let existingPackageDetails = await got.get<ReleasePackage>(
+        `https://${this.apiToken}:@packagecloud.io/api/v1/repos/shiftkey/desktop/package/${type}/${distroName}/${distroVersion}/${arch}/${versionJsonPath}.json`,
+        { responseType: "json" }
       );
+
+      if (existingPackageDetails.statusCode === 404) {
+        return
+      }
+
+      if (
+        existingPackageDetails &&
+        existingPackageDetails.body &&
+        existingPackageDetails.body.destroy_url
+      ) {
+        if (reportProgress)
+          reportProgress(
+            `Deleting pre-existing package ${fileName} in shiftkey/desktop`
+          );
+
+        await got.delete(
+          `https://${this.apiToken}:@packagecloud.io/${existingPackageDetails.body.destroy_url}`
+        );
+      }
+    } catch (err) {
+      if (err.name === "HTTPError" && err.response.statusCode === 404) {
+        // no resource found, we can continue
+        return
+      }
+
+      console.error(`Encountered problem while looking for existing package`, err)
+      throw err
     }
   }
 }
