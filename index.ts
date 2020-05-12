@@ -65,7 +65,7 @@ getArtifacts().then((artifacts) => {
     console.log(`File ${a.filePath} has name ${a.name}`);
   }
 
-  const uploader = new LinuxPackageUploader("", "", token);
+  const uploader = new LinuxPackageUploader(token);
 
   uploader.uploadLinuxPackages('2.5.0-linux1', artifacts, (progress) => {
     console.log("Uploading progress: " + progress);

@@ -22,7 +22,6 @@ type ReleasePackageDetails = {
   distroName: string;
   distroId: number;
   distroVersion: string;
-  releaseSuffix?: string;
 };
 
 type ReleasePackage = {
@@ -30,17 +29,11 @@ type ReleasePackage = {
 };
 
 export class LinuxPackageUploader {
-  readonly packageRepoName: string;
-  readonly packageStagingRepoName: string;
   readonly apiToken: string;
 
   public constructor(
-    packageRepoName: string,
-    packageStagingRepoName: string,
     apiToken: string
   ) {
-    this.packageRepoName = packageRepoName;
-    this.packageStagingRepoName = packageStagingRepoName;
     this.apiToken = apiToken;
   }
 
@@ -120,11 +113,6 @@ export class LinuxPackageUploader {
     packageDetails: ReleasePackageDetails,
     reportProgress?: ProgressCallback
   ) {
-    // Infer the package suffix from the version
-    if (/-beta\d+/.test(packageDetails.version)) {
-      packageDetails.releaseSuffix = "-beta";
-    }
-
     await this._removePackageIfExists(packageDetails, reportProgress);
     await this._uploadToPackageCloud(packageDetails, reportProgress);
   }
@@ -136,7 +124,7 @@ export class LinuxPackageUploader {
     return new Promise(async (resolve, reject) => {
       if (reportProgress)
         reportProgress(
-          `Uploading ${packageDetails.fileName} to ${this.packageStagingRepoName}`
+          `Uploading ${packageDetails.fileName} to shiftkey/desktop`
         );
 
       const form = new FormData();
@@ -150,7 +138,7 @@ export class LinuxPackageUploader {
       throw new Error("We don't currently inspect the response from the API");
 
       await got.post(
-        `https://${this.apiToken}:@packagecloud.io/api/v1/repos/shiftkey/${this.packageStagingRepoName}/packages.json`,
+        `https://${this.apiToken}:@packagecloud.io/api/v1/repos/shiftkey/desktop/packages.json`,
         { body: form }
       );
       // (error, uploadResponse, body) => {
@@ -173,7 +161,6 @@ export class LinuxPackageUploader {
       fileName,
       distroName,
       distroVersion,
-      releaseSuffix,
     }: ReleasePackageDetails,
     reportProgress?: ProgressCallback
   ) {
@@ -182,7 +169,7 @@ export class LinuxPackageUploader {
       type === "rpm" ? `${version.replace("-", ".")}/0.1` : version;
 
     let existingPackageDetails = await got.get<ReleasePackage>(
-      `https://${this.apiToken}:@packagecloud.io/api/v1/repos/shiftkey/${this.packageStagingRepoName}/package/${type}/${distroName}/${distroVersion}/atom${releaseSuffix}/${arch}/${versionJsonPath}.json`,
+      `https://${this.apiToken}:@packagecloud.io/api/v1/repos/shiftkey/desktop/package/${type}/${distroName}/${distroVersion}/${arch}/${versionJsonPath}.json`,
       { responseType: "json" }
     );
 
@@ -193,7 +180,7 @@ export class LinuxPackageUploader {
     ) {
       if (reportProgress)
         reportProgress(
-          `Deleting pre-existing package ${fileName} in ${this.packageStagingRepoName}`
+          `Deleting pre-existing package ${fileName} in shiftkey/desktop`
         );
 
       await got.delete(
