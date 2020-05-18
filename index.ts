@@ -67,7 +67,8 @@ getArtifacts().then((artifacts) => {
 
   const uploader = new LinuxPackageUploader(token);
 
-  uploader.uploadLinuxPackages('2.5.0-linux1', artifacts, (progress) => {
+  // TODO: how to detect the right release?
+  uploader.uploadLinuxPackages('2.5.0-linux2', artifacts, (progress) => {
     console.log("Uploading progress: " + progress);
   })
 });
