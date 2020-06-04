@@ -1,7 +1,6 @@
 import { LinuxPackageUploader, Artifact } from "./linux-package-uploader";
 import { promisify } from "util";
 import * as path from "path";
-import * as os from "os";
 
 const glob = require("glob");
 const globPromise = promisify(glob);
@@ -19,9 +18,7 @@ if (token == null) {
 async function getArtifacts() {
   const artifacts = new Array<Artifact>();
 
-  const homedir = os.homedir();
-
-  const root = path.join(homedir, "src", "desktop", "dist");
+  const root = path.join(__dirname, "dist");
 
   const debInstallerPath = `${root}/GitHubDesktop-*.deb`;
 
@@ -65,10 +62,23 @@ getArtifacts().then((artifacts) => {
     console.log(`File ${a.filePath} has name ${a.name}`);
   }
 
-  const uploader = new LinuxPackageUploader(token);
+  const firstFile = artifacts[0].name;
+  const fileNameRegex = /^GitHubDesktop-linux-(\d+.\d+.\d+.*)\.(deb|rpm)$/;
+  const match = firstFile.match(fileNameRegex);
 
-  // TODO: how to detect the right release?
-  uploader.uploadLinuxPackages('2.5.0-linux2', artifacts, (progress) => {
-    console.log("Uploading progress: " + progress);
-  })
+  if (match == null) {
+    throw new Error(
+      "Unable to find version in string. Check file names and try again."
+    );
+  } else {
+    const version = match[1];
+
+    console.log(`Found ${artifacts.length} files for release ${version}`)
+
+    const uploader = new LinuxPackageUploader(token);
+
+    uploader.uploadLinuxPackages(version, artifacts, (progress) => {
+      console.log("Uploading progress: " + progress);
+    });
+  }
 });
