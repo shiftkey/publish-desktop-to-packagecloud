@@ -2,7 +2,6 @@
   "name": "publish-desktop-to-packagecloud",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
     "build": "tsc",
     "start": "ts-node index.ts"
